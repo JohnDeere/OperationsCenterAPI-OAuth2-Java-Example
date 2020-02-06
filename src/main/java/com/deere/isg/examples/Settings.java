@@ -51,10 +51,10 @@ public class Settings {
     }
 
     public void updateTokenInfo(JSONObject obj) {
-        idToken = obj.getString("id_token");
-        accessToken = obj.getString("access_token");
-        refreshToken = obj.getString("refresh_token");
-        exp = obj.getLong("expires_in");
+        idToken = obj.optString("id_token");
+        accessToken = obj.optString("access_token");
+        refreshToken = obj.optString("refresh_token");
+        exp = obj.optLong("expires_in");
     }
 
 }
