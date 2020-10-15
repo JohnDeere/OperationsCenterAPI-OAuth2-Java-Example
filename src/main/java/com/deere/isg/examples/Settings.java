@@ -12,6 +12,7 @@ public class Settings {
     public String clientId = "";
     public String clientSecret = "";
     public String wellKnown = "https://signin.johndeere.com/oauth2/aus78tnlaysMraFhC1t7/.well-known/oauth-authorization-server";
+    public String apiUrl = "https://sandboxapi.deere.com/platform";
     public String callbackUrl = "http://localhost:9090/callback";
     public String scopes = "openid profile offline_access ag1 eq1";
     public String state = "";

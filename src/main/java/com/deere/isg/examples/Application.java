@@ -15,6 +15,7 @@ import spark.template.mustache.MustacheTemplateEngine;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static com.google.common.collect.ImmutableMap.of;
@@ -23,6 +24,7 @@ public class Application {
     private static final Logger logger = LoggerFactory.getLogger("oidc");
     private MustacheTemplateEngine stache = new MustacheTemplateEngine();
     private Settings settings = new Settings();
+    private Api api = new Api();
     private Map<String, JSONObject> metaInfo = new HashMap<>();
 
     /**
@@ -80,6 +82,12 @@ public class Application {
                     .getObject();
             logger.info("Token exchange successful! \n{}", obj.toString(3));
             settings.updateTokenInfo(obj);
+
+            String organizationAccessUrl = needsOrganizationAccess();
+            if (organizationAccessUrl != null) {
+                response.redirect(organizationAccessUrl);
+            }
+
         } catch (Exception e) {
             return renderError(Throwables.getStackTraceAsString(e));
         }
@@ -143,17 +151,40 @@ public class Application {
         return index(request, response);
     }
 
+    /**
+     * Check to see if the 'connections' rel is present for any organization.
+     * If the rel is present it means the oauth application has not completed it's
+     * access to an organization and must redirect the user to the uri provided
+     * in the link.
+     *
+     * @return A redirect uri if 'connections' rel is present or <code>null</code>
+     * if no redirect is required to finish the setup.
+     */
+    @SuppressWarnings("unchecked")
+    private String needsOrganizationAccess() {
+        JSONObject apiResponse = api.get(settings.accessToken, settings.apiUrl + "/organizations");
+
+        List<JSONObject> values = apiResponse.getJSONArray("values").toList();
+
+        for (JSONObject org : values) {
+            List<JSONObject> links = org.getJSONArray("links").toList();
+            for (JSONObject link : links) {
+                String linkType = link.getString("rel");
+                if (linkType.equals("connections")) {
+                    return link.getString("uri");
+                }
+            }
+        }
+
+        return null;
+    }
+
     private Object callTheApi(Request request, Response response) {
         String path = request.queryParams("url");
         logger.info("Making api call");
         try {
-        JSONObject apiResponse = Unirest.get(path)
-                .header("authorization", "Bearer " + settings.accessToken)
-                .accept("application/vnd.deere.axiom.v3+json")
-                .asJson()
-                .getBody()
-                .getObject();
-        settings.apiResponse = apiResponse.toString(3);
+            JSONObject apiResponse = api.get(settings.accessToken, path);
+            settings.apiResponse = apiResponse.toString(3);
         } catch (Exception e) {
             return renderError(Throwables.getStackTraceAsString(e));
         }
