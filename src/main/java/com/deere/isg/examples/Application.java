@@ -161,7 +161,7 @@ public class Application {
      * if no redirect is required to finish the setup.
      */
     @SuppressWarnings("unchecked")
-    private String needsOrganizationAccess() {
+    private String needsOrganizationAccess() throws URISyntaxException {
         JSONObject apiResponse = api.get(settings.accessToken, settings.apiUrl + "/organizations");
 
         List<JSONObject> values = apiResponse.getJSONArray("values").toList();
@@ -171,7 +171,9 @@ public class Application {
             for (JSONObject link : links) {
                 String linkType = link.getString("rel");
                 if (linkType.equals("connections")) {
-                    return link.getString("uri");
+                    URIBuilder uriBuilder = new URIBuilder(link.getString("uri"));
+                    uriBuilder.addParameter("redirect_uri", settings.orgConnectionCompletedUrl);
+                    return uriBuilder.build().toString();
                 }
             }
         }
