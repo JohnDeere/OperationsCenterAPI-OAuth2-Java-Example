@@ -7,7 +7,7 @@
 <body>
 <h1>Welcome to the My John Deere API Java Example.</h1>
 
-
+{{#settings}}
 <div class="layout">
     <div class="grid-item">
         <div class="grid-container">
@@ -49,7 +49,7 @@
                     <input type="url"
                            name="callbackUrl"
                            id="callbackUrl"
-                           placeholder="The classback URL must be pre-registered with the client"
+                           placeholder="The callback URL must be pre-registered with the client"
                            aria-label="callBackLabel"
                            value="{{callbackUrl}}"
                            required>
@@ -140,6 +140,8 @@
 
     </div>
 {{/accessToken}}
+
+{{/settings}}
 
 <script type="text/javascript" src="/functions.js"></script>
 <script type="text/javascript" src="/prism.js"></script>
