@@ -56,24 +56,23 @@ public class Application {
      * Updates the settings with the form an inits the OIDC login
      * @return
      */
-    private Object startOIDC(Context contex) {
-        settings.populate(contex);
+    private void startOIDC(Context context) {
+        settings.populate(context);
         String redirect = getRedirectUrl();
         logger.info("Authorization Link Built. Redirecting to : " + redirect);
-        contex.redirect(redirect);
-        return null;
+        context.redirect(redirect);
     }
 
-    private void processCallback(Context contex) {
+    private void processCallback(Context context) {
         logger.info("Processing callback from authorization server.");
-        if (!Strings.isNullOrEmpty(contex.queryParam("error"))) {
-            String description = contex.queryParam("error_description");
-            renderError(contex, description);
+        if (!Strings.isNullOrEmpty(context.queryParam("error"))) {
+            String description = context.queryParam("error_description");
+            renderError(context, description);
             return;
         }
 
         try {
-            String code = contex.queryParam("code");
+            String code = context.queryParam("code");
             logger.info("Found access code ({}) will use this to exchange for a access token", code);
             JSONObject obj = Unirest.post(getLocationFromMeta("token_endpoint"))
                     .header("authorization", "Basic " + settings.getBasicAuthHeader())
@@ -91,15 +90,13 @@ public class Application {
 
             String organizationAccessUrl = needsOrganizationAccess();
             if (organizationAccessUrl != null) {
-                contex.redirect(organizationAccessUrl);
+                context.redirect(organizationAccessUrl);
             }
-
+            index(context);
+            
         } catch (Exception e) {
-            renderError(contex, Throwables.getStackTraceAsString(e));
-            return;
+            renderError(context, Throwables.getStackTraceAsString(e));
         }
-
-        index(contex);
     }
 
     /**
