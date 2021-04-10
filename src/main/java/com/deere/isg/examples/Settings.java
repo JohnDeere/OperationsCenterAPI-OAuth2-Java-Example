@@ -1,12 +1,14 @@
 package com.deere.isg.examples;
 
 import com.google.common.base.Strings;
+import io.javalin.http.Context;
 import kong.unirest.json.JSONObject;
-import spark.Request;
+
 
 import java.time.LocalDateTime;
 import java.util.Base64;
 import java.util.UUID;
+
 
 public class Settings {
     private static String SERVER_URL = "http://localhost:9090";
@@ -17,20 +19,20 @@ public class Settings {
     public String callbackUrl = SERVER_URL + "/callback";
     public String orgConnectionCompletedUrl = SERVER_URL;
     public String scopes = "openid profile offline_access ag1 eq1";
-    public String state = "";
+    public String state = UUID.randomUUID().toString();
     public String idToken;
     public String accessToken;
     public String refreshToken;
     public String apiResponse;
     public Long exp;
 
-    public void populate(Request request) {
-        this.clientId = request.queryParams("clientId");
-        this.clientSecret = request.queryParams("clientSecret");
-        this.wellKnown = request.queryParams("wellKnown");
-        this.callbackUrl = request.queryParams("callbackUrl");
-        this.scopes = request.queryParams("scopes");
-        this.state = request.queryParams("state");
+    public void populate(Context request) {
+        this.clientId = request.formParam("clientId");
+        this.clientSecret = request.formParam("clientSecret");
+        this.wellKnown = request.formParam("wellKnown");
+        this.callbackUrl = request.formParam("callbackUrl");
+        this.scopes = request.formParam("scopes");
+        this.state = request.formParam("state");
     }
 
     public String getAccessTokenDetails() {

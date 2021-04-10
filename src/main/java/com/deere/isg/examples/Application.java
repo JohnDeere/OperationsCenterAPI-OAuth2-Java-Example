@@ -1,16 +1,18 @@
 package com.deere.isg.examples;
 
+import com.github.mustachejava.DefaultMustacheFactory;
+import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableMap;
+import io.javalin.Javalin;
+import io.javalin.http.Context;
+import io.javalin.plugin.rendering.template.JavalinMustache;
 import kong.unirest.Unirest;
 import kong.unirest.json.JSONObject;
 import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import spark.ModelAndView;
-import spark.Request;
-import spark.Response;
-import spark.Spark;
-import spark.template.mustache.MustacheTemplateEngine;
+
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -22,7 +24,6 @@ import static com.google.common.collect.ImmutableMap.of;
 
 public class Application {
     private static final Logger logger = LoggerFactory.getLogger("oidc");
-    private MustacheTemplateEngine stache = new MustacheTemplateEngine();
     private Settings settings = new Settings();
     private Api api = new Api();
     private Map<String, JSONObject> metaInfo = new HashMap<>();
@@ -32,42 +33,46 @@ public class Application {
      */
     public void start() {
         int port = 9090;
-        Spark.port(port);
-        Spark.staticFileLocation("assets");
-        Spark.get("/", this::index);
-        Spark.post("/", this::startOIDC);
-        Spark.get("/callback", this::processCallback);
-        Spark.get("/refresh-access-token", this::refreshAccessToken);
-        Spark.post("/call-api", this::callTheApi);
+        Javalin app = Javalin.create(c -> {
+            c.addStaticFiles("assets/");
+
+        }).start(port);
+        DefaultMustacheFactory stache = new DefaultMustacheFactory("templates");
+        JavalinMustache.configure(stache);
+        app.get("/", this::index);
+        app.post("/", this::startOIDC);
+        app.get("/callback", this::processCallback);
+        app.get("/refresh-access-token", this::refreshAccessToken);
+        app.post("/call-api", this::callTheApi);
         logger.info("Application Stated please navigate to http://localhost:"+port);
         Unirest.config().interceptor(new LoggingInterceptor());
     }
 
-    public Object index(Request request, Response response) {
-        return stache.render(new ModelAndView(settings, "main.mustache"));
+    public void index(Context contex) {
+        contex.render("main.mustache", ImmutableMap.of("settings", settings));
     }
 
     /**
      * Updates the settings with the form an inits the OIDC login
      * @return
      */
-    private Object startOIDC(Request request, Response response) {
-        settings.populate(request);
+    private void startOIDC(Context context) {
+        settings.populate(context);
         String redirect = getRedirectUrl();
         logger.info("Authorization Link Built. Redirecting to : " + redirect);
-        response.redirect(redirect);
-        return null;
+        context.redirect(redirect);
     }
 
-    private Object processCallback(Request request, Response response) {
+    private void processCallback(Context context) {
         logger.info("Processing callback from authorization server.");
-        if (request.queryParams("error") != null) {
-            String description = request.queryParams("error_description");
-            return renderError(description);
+        if (!Strings.isNullOrEmpty(context.queryParam("error"))) {
+            String description = context.queryParam("error_description");
+            renderError(context, description);
+            return;
         }
 
         try {
-            String code = request.queryParams("code");
+            String code = context.queryParam("code");
             logger.info("Found access code ({}) will use this to exchange for a access token", code);
             JSONObject obj = Unirest.post(getLocationFromMeta("token_endpoint"))
                     .header("authorization", "Basic " + settings.getBasicAuthHeader())
@@ -85,14 +90,13 @@ public class Application {
 
             String organizationAccessUrl = needsOrganizationAccess();
             if (organizationAccessUrl != null) {
-                response.redirect(organizationAccessUrl);
+                context.redirect(organizationAccessUrl);
             }
-
+            index(context);
+            
         } catch (Exception e) {
-            return renderError(Throwables.getStackTraceAsString(e));
+            renderError(context, Throwables.getStackTraceAsString(e));
         }
-
-        return index(request, response);
     }
 
     /**
@@ -129,7 +133,7 @@ public class Application {
                 .getObject();
     }
 
-    private Object refreshAccessToken(Request request, Response response) {
+    private void refreshAccessToken(Context context) {
         try {
             logger.info("Posting to refresh access token");
             JSONObject refresh = Unirest.post(getLocationFromMeta("token_endpoint"))
@@ -146,9 +150,10 @@ public class Application {
             logger.info("Refreshed token \n{}",refresh.toString(3));
             settings.updateTokenInfo(refresh);
         } catch (Exception e) {
-            return renderError(Throwables.getStackTraceAsString(e));
+            renderError(context, Throwables.getStackTraceAsString(e));
+            return;
         }
-        return index(request, response);
+        index(context);
     }
 
     /**
@@ -181,22 +186,23 @@ public class Application {
         return null;
     }
 
-    private Object callTheApi(Request request, Response response) {
-        String path = request.queryParams("url");
+    private void callTheApi(Context context) {
+        String path = context.queryParam("url");
         logger.info("Making api call");
         try {
             JSONObject apiResponse = api.get(settings.accessToken, path);
             settings.apiResponse = apiResponse.toString(3);
         } catch (Exception e) {
-            return renderError(Throwables.getStackTraceAsString(e));
+             renderError(context, Throwables.getStackTraceAsString(e));
+             return;
         }
-        return index(request, response);
+        index(context);
     }
 
-    private Object renderError(String errorMessage) {
+    private void renderError(Context context, String errorMessage) {
         logger.error(errorMessage);
-        return stache.render(
-                new ModelAndView(of("error", errorMessage), "error.mustache")
+        context.render("error.mustache",
+                of("error", Strings.nullToEmpty(errorMessage))
         );
     }
 }
