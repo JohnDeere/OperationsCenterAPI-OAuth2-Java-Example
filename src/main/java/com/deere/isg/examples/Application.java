@@ -6,6 +6,7 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
+import io.javalin.http.staticfiles.Location;
 import io.javalin.plugin.rendering.template.JavalinMustache;
 import kong.unirest.Unirest;
 import kong.unirest.json.JSONObject;
@@ -34,7 +35,7 @@ public class Application {
     public void start() {
         int port = 9090;
         Javalin app = Javalin.create(c -> {
-            c.addStaticFiles("assets/");
+            c.addStaticFiles("assets/", Location.CLASSPATH);
 
         }).start(port);
         DefaultMustacheFactory stache = new DefaultMustacheFactory("templates");
