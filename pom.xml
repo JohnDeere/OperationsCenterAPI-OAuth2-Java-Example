@@ -10,6 +10,7 @@
 
     <properties>
         <jetty.version>9.4.39.v20210325</jetty.version>
+        <slf4j-api.version>1.7.36</slf4j-api.version>
     </properties>
     <build>
         <plugins>
@@ -67,13 +68,13 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-            <version>1.7.36</version>
+            <version>${slf4j-api.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
-            <version>1.7.36</version>
+            <version>${slf4j-api.version}</version>
         </dependency>
 
         <!-- https://mvnrepository.com/artifact/com.google.guava/guava -->
