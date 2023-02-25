@@ -7,7 +7,8 @@ import com.google.common.collect.ImmutableMap;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
 import io.javalin.http.staticfiles.Location;
-import io.javalin.plugin.rendering.template.JavalinMustache;
+import io.javalin.rendering.JavalinRenderer;
+import io.javalin.rendering.template.JavalinMustache;
 import kong.unirest.Unirest;
 import kong.unirest.json.JSONObject;
 import org.apache.http.client.utils.URIBuilder;
@@ -35,11 +36,13 @@ public class Application {
     public void start() {
         int port = 9090;
         Javalin app = Javalin.create(c -> {
-            c.addStaticFiles("assets/", Location.CLASSPATH);
+            c.staticFiles.add(s -> {
+                s.directory = "assets/";
+                s.location = Location.CLASSPATH;
+            });
 
         }).start(port);
-        DefaultMustacheFactory stache = new DefaultMustacheFactory("templates");
-        JavalinMustache.configure(stache);
+        JavalinMustache.init(new DefaultMustacheFactory("templates"));
         app.get("/", this::index);
         app.post("/", this::startOIDC);
         app.get("/callback", this::processCallback);
