@@ -6,7 +6,7 @@ This project gives a full native java example of:
    * Call the MyJohnDeere APIs with your access token
    
 ## Requirements
-* Java 8+
+* Java 17
 * A free port 9090 (you can change this)
    
 ## How to start this project
