@@ -1,8 +1,9 @@
 // Unpublished Work (c) 2020 Deere & Company
 package com.deere.isg.examples;
 
-import kong.unirest.Unirest;
-import kong.unirest.json.JSONObject;
+
+import kong.unirest.core.Unirest;
+import kong.unirest.core.json.JSONObject;
 
 public class Api {
     public JSONObject get(String accessToken, String resourceUrl) {

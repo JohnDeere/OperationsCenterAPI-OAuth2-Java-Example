@@ -1,7 +1,7 @@
 package com.deere.isg.examples;
 
 import com.google.common.base.Strings;
-import kong.unirest.*;
+import kong.unirest.core.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

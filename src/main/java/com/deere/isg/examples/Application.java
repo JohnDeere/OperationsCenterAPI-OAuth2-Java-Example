@@ -1,5 +1,6 @@
 package com.deere.isg.examples;
 
+
 import com.github.mustachejava.DefaultMustacheFactory;
 import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
@@ -7,17 +8,15 @@ import com.google.common.collect.ImmutableMap;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
 import io.javalin.http.staticfiles.Location;
-import io.javalin.rendering.JavalinRenderer;
+
 import io.javalin.rendering.template.JavalinMustache;
-import kong.unirest.Unirest;
-import kong.unirest.json.JSONObject;
-import org.apache.http.client.utils.URIBuilder;
+import kong.unirest.core.Path;
+import kong.unirest.core.Unirest;
+import kong.unirest.core.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,13 +35,13 @@ public class Application {
     public void start() {
         int port = 9090;
         Javalin app = Javalin.create(c -> {
+            c.fileRenderer(new JavalinMustache(new DefaultMustacheFactory("templates")));
             c.staticFiles.add(s -> {
                 s.directory = "assets/";
                 s.location = Location.CLASSPATH;
             });
 
         }).start(port);
-        JavalinMustache.init(new DefaultMustacheFactory("templates"));
         app.get("/", this::index);
         app.post("/", this::startOIDC);
         app.get("/callback", this::processCallback);
@@ -107,19 +106,14 @@ public class Application {
      * @return create a authorization URL
      */
     private String getRedirectUrl() {
-        try {
-            String authEndpoint = getLocationFromMeta("authorization_endpoint");
-            return new URIBuilder(URI.create(authEndpoint))
-                    .addParameter("client_id", settings.clientId)
-                    .addParameter("response_type", "code")
-                    .addParameter("scope", settings.scopes)
-                    .addParameter("redirect_uri", settings.callbackUrl)
-                    .addParameter("state", settings.state)
-                    .build()
-                    .toString();
-        } catch (URISyntaxException e) {
-            throw new RuntimeException(e);
-        }
+        var authEndpoint = getLocationFromMeta("authorization_endpoint");
+        var path = new Path(authEndpoint);
+        path.queryString("client_id", settings.clientId);
+        path.queryString("response_type", "code");
+        path.queryString("scope", settings.scopes);
+        path.queryString("redirect_uri", settings.callbackUrl);
+        path.queryString("state", settings.state);
+        return path.toString();
     }
 
     private String getLocationFromMeta(String key) {
@@ -170,7 +164,7 @@ public class Application {
      * if no redirect is required to finish the setup.
      */
     @SuppressWarnings("unchecked")
-    private String needsOrganizationAccess() throws URISyntaxException {
+    private String needsOrganizationAccess() {
         JSONObject apiResponse = api.get(settings.accessToken, settings.apiUrl + "/organizations");
 
         List<JSONObject> values = apiResponse.getJSONArray("values").toList();
@@ -180,9 +174,9 @@ public class Application {
             for (JSONObject link : links) {
                 String linkType = link.getString("rel");
                 if (linkType.equals("connections")) {
-                    URIBuilder uriBuilder = new URIBuilder(link.getString("uri"));
-                    uriBuilder.addParameter("redirect_uri", settings.orgConnectionCompletedUrl);
-                    return uriBuilder.build().toString();
+                    Path uriBuilder = new Path(link.getString("uri"));
+                    uriBuilder.queryString("redirect_uri", Settings.SERVER_URL);
+                    return uriBuilder.toString();
                 }
             }
         }
@@ -191,7 +185,7 @@ public class Application {
     }
 
     private void callTheApi(Context context) {
-        String path = context.queryParam("url");
+        String path = context.req().getParameter("url");
         logger.info("Making api call");
         try {
             JSONObject apiResponse = api.get(settings.accessToken, path);

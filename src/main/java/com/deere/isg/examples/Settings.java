@@ -2,7 +2,7 @@ package com.deere.isg.examples;
 
 import com.google.common.base.Strings;
 import io.javalin.http.Context;
-import kong.unirest.json.JSONObject;
+import kong.unirest.core.json.JSONObject;
 
 
 import java.time.LocalDateTime;
@@ -11,13 +11,12 @@ import java.util.UUID;
 
 
 public class Settings {
-    private static String SERVER_URL = "http://localhost:9090";
+    public static final String SERVER_URL = "http://localhost:9090";
     public String clientId = "";
     public String clientSecret = "";
     public String wellKnown = "https://signin.johndeere.com/oauth2/aus78tnlaysMraFhC1t7/.well-known/oauth-authorization-server";
     public String apiUrl = "https://sandboxapi.deere.com/platform";
     public String callbackUrl = SERVER_URL + "/callback";
-    public String orgConnectionCompletedUrl = SERVER_URL;
     public String scopes = "openid profile offline_access ag1 eq1";
     public String state = UUID.randomUUID().toString();
     public String idToken;

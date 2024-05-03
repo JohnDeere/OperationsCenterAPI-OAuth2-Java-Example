@@ -1,7 +1,7 @@
 package com.deere.isg.examples;
 
-import kong.unirest.HttpResponse;
-import kong.unirest.JsonNode;
+import kong.unirest.core.HttpResponse;
+import kong.unirest.core.JsonNode;
 
 public class RequestException extends RuntimeException {
     public RequestException(HttpResponse<JsonNode> r) {
