@@ -9,7 +9,7 @@
     <version>1.0</version>
 
     <properties>
-        <slf4j-api.version>2.0.13</slf4j-api.version>
+        <slf4j-api.version>2.0.17</slf4j-api.version>
         <javalin.version>6.3.0</javalin.version>
     </properties>
     <build>
